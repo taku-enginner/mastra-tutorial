@@ -1,0 +1,3 @@
+export declare const getCurrentTime: import("@mastra/core/tools", { with: { "resolution-mode": "import" } }).Tool<undefined, undefined, import("@mastra/core", { with: { "resolution-mode": "import" } }).ToolExecutionContext<undefined>>;
+export declare const getWeather: import("@mastra/core/tools", { with: { "resolution-mode": "import" } }).Tool<undefined, undefined, import("@mastra/core", { with: { "resolution-mode": "import" } }).ToolExecutionContext<undefined>>;
+//# sourceMappingURL=tools.d.ts.map
