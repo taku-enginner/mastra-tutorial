@@ -1,6 +1,7 @@
 import { createStep, createWorkflow } from '@mastra/core/workflows';
 import { z } from 'zod';
 
+// 天気予報のスキー合定義。予報取得と行動計画の入力に使用。
 const forecastSchema = z.object({
   date: z.string(),
   maxTemp: z.number(),
@@ -10,53 +11,64 @@ const forecastSchema = z.object({
   location: z.string(),
 });
 
+// 天気コードと天気のマッピング
 function getWeatherCondition(code: number): string {
   const conditions: Record<number, string> = {
-    0: 'Clear sky',
-    1: 'Mainly clear',
-    2: 'Partly cloudy',
-    3: 'Overcast',
-    45: 'Foggy',
-    48: 'Depositing rime fog',
-    51: 'Light drizzle',
-    53: 'Moderate drizzle',
-    55: 'Dense drizzle',
-    61: 'Slight rain',
-    63: 'Moderate rain',
-    65: 'Heavy rain',
-    71: 'Slight snow fall',
-    73: 'Moderate snow fall',
-    75: 'Heavy snow fall',
-    95: 'Thunderstorm',
+    0: '快晴',
+    1: 'ほぼ快晴',
+    2: '一部曇り',
+    3: '曇り',
+    45: '霧',
+    48: '霧氷',
+    51: '弱い霧雨',
+    53: '適度な霧雨',
+    55: '濃い霧雨',
+    61: '弱い雨',
+    63: '適度な雨',
+    65: '強い雨',
+    71: '弱い雪',
+    73: '適度な雪',
+    75: '強い雪',
+    95: '雷雨',
   };
   return conditions[code] || 'Unknown';
 }
 
+// 天気予報取得ステップ
 const fetchWeather = createStep({
   id: 'fetch-weather',
-  description: 'Fetches weather forecast for a given city',
+  description: '与えられた場所の天気予報を取得',
   inputSchema: z.object({
-    city: z.string().describe('The city to get the weather for'),
+    city: z.string().describe('天気取得のための場所'),
   }),
   outputSchema: forecastSchema,
+  // asyncは非同期関数。APIへのリクエストをawaitを使って実行する
   execute: async ({ inputData }) => {
     if (!inputData) {
-      throw new Error('Input data not found');
+      throw new Error('場所の入力がありません');
     }
 
-    const geocodingUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(inputData.city)}&count=1`;
-    const geocodingResponse = await fetch(geocodingUrl);
-    const geocodingData = (await geocodingResponse.json()) as {
-      results: { latitude: number; longitude: number; name: string }[];
+    // TODO:あとでenvファイルにする
+    const API_KEY = "AIzaSyBIOxK-SgqILz1EdnDrpjVDYRlPN2NW96I";
+
+    const geocodingUrl = 'https://maps.googleapis.com/maps/api/geocode/json?address=tokyo&key=' + API_KEY;
+
+    const result = await fetch(geocodingUrl);
+
+    const locationData = result[0];
+    console.log(locationData);
+    console.log("テストテストテスト");
+    const geocodingData = {
+      lautitude: locationData.geometry.location.lat,
+      longitude: locationData.geometry.location.lng,
+      name: locationData.address_components[0].long_name,
     };
 
-    if (!geocodingData.results?.[0]) {
-      throw new Error(`Location '${inputData.city}' not found`);
-    }
+    //if (!geocodingData.results?.[0]) {
+      //throw new Error(`都市 '${geocodingData.name}' が見つかりません`);
+    //};
 
-    const { latitude, longitude, name } = geocodingData.results[0];
-
-    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=precipitation,weathercode&timezone=auto,&hourly=precipitation_probability,temperature_2m`;
+    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${geocodingData.lautitude}&longitude=${geocodingData.longitude}&current=precipitation,weathercode&timezone=auto,&hourly=precipitation_probability,temperature_2m`;
     const response = await fetch(weatherUrl);
     const data = (await response.json()) as {
       current: {
